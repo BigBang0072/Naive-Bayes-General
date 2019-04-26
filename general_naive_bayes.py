@@ -82,14 +82,15 @@ class gNaiveBayes():
             world_count=wframe.shape[0]
             #Iterating over all the attributes in this world
             for aval in self.attr_vals.keys():
+                #Getting the number of attributes in this aval
+                num_avals=len(list(self.attr_vals.keys()))
                 #Now finding the probability of each of the attributes
-                for fval,fframe in wframe.groupby(aval):
-                    # print(fval,aval,world)
-                    #sys.exit(1)
+                for fval in attr_vals[aval]:
+                    fframe=wframe[wframe[aval]==fval]
                     #Getting the count of this particular val of attr
                     feature_count=fframe.shape[0]
                     #Now saving the probability of this feature
-                    prob=feature_count/world_count
+                    prob=(feature_count+1)/(world_count+num_avals)
                     world_f_prob[world][aval][fval]=prob
                     print("World:{}\tAttr:{}\tFeature:{}\tprob:{}"\
                                                 .format(world,
@@ -111,14 +112,18 @@ class gNaiveBayes():
         #Initializing the counters for confusion matrix (default 0)
         confusion_mat=defaultdict(lambda:defaultdict(int))
 
+        print("Starting the prediction for given dataset.Hold Tight!")
         #Iterating over all the examples
-        for idx in range(data_df.shape[0]):
+        for idx in data_df.index.tolist():
             #Retreiving the points from the dataframe
             point=data_df.loc[idx]
             label=point["labels"]
 
             #Now getting the prediction label from our trained model
+            # print("idx:\n",idx,point)
             pred_world,prob=self.make_prediction_point(point)
+            # print("Doc:{0} \twith prob:{1:.6f} \tevaluated:{2}\tactually:{3}".\
+            #                         format(idx,prob,pred_world,label))
             #Now adding the entry to the confusion matrix
             confusion_mat[label][pred_world]+=1
 
@@ -136,6 +141,7 @@ class gNaiveBayes():
         max_probable_world=None
 
         #Now iterating over all the class types to get their prob
+        norm=0.0
         for world in class_vals:
             #Intiializing the prob of point with that of world
             prob=1*self.world_prob[world]
@@ -144,13 +150,17 @@ class gNaiveBayes():
                 #value of attributes in this point
                 attr_val=point[attr]
                 #Multiplying the attributes val prob in this world
-                print(world,attr,self.world_f_prob[world][attr].keys())
+                # print(world,attr,self.world_f_prob[world][attr].keys())
                 prob*=self.world_f_prob[world][attr][attr_val]
-            #Appending the probability of this world in list
+            #Adding this probability for normalization
+            norm+=prob
+            #Saving the one with maximum prob
             if(prob>max_world_prob):
                 max_world_prob=prob
                 max_probable_world=world
 
+        #Normalizing the prob before returning
+        max_world_prob/=norm
         #Now returning the prediciton
         return max_probable_world,max_world_prob
 
@@ -170,7 +180,7 @@ class gNaiveBayes():
             print("Actual Label: ",label)
             for pred in class_vals:
                 count=confusion_mat[label][pred]
-                print("\tcount:{}\tpred_label{}".format(count,pred))
+                print("\tcount:{}\t\tpred_label:{}".format(count,pred))
                 #Adding up the correct count
                 if(label==pred):
                     correct_count+=count
@@ -198,4 +208,11 @@ if __name__=="__main__":
     #Calculating the world's probability
     myNaive.get_worlds_probability()
     myNaive.get_attr_prob_in_world()
+
+    print("###############################################")
+    print("Evaluating the results on traiing set")
     myNaive.evaluate_dataset(train_df)
+
+    print("\n\n###############################################")
+    print("Evaluating the results on traiing set")
+    myNaive.evaluate_dataset(valid_df)
