@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from data_handling import *
 from collections import defaultdict
+import sys
+np.random.seed(1)
 
 class gNaiveBayes():
     '''
@@ -82,6 +84,8 @@ class gNaiveBayes():
             for aval in self.attr_vals.keys():
                 #Now finding the probability of each of the attributes
                 for fval,fframe in wframe.groupby(aval):
+                    # print(fval,aval,world)
+                    #sys.exit(1)
                     #Getting the count of this particular val of attr
                     feature_count=fframe.shape[0]
                     #Now saving the probability of this feature
@@ -96,6 +100,86 @@ class gNaiveBayes():
             print("\n")
         #Assigning the world prob to class
         self.world_f_prob=world_f_prob
+
+    #Function to evaluate the accuracy on a particular dataset
+    def evaluate_dataset(self,data_df):
+        '''
+        This function will run over all the points present in the
+        dataset make prediction using the trained probaiblites of
+        each attributes in every world.
+        '''
+        #Initializing the counters for confusion matrix (default 0)
+        confusion_mat=defaultdict(lambda:defaultdict(int))
+
+        #Iterating over all the examples
+        for idx in range(data_df.shape[0]):
+            #Retreiving the points from the dataframe
+            point=data_df.loc[idx]
+            label=point["labels"]
+
+            #Now getting the prediction label from our trained model
+            pred_world,prob=self.make_prediction_point(point)
+            #Now adding the entry to the confusion matrix
+            confusion_mat[label][pred_world]+=1
+
+        #Printing the confusion matrix
+        self._print_evaluation_metrics(confusion_mat)
+
+    #Function to evaluate the class for a particular input points
+    def make_prediction_point(self,point):
+        '''
+        This function will take an input point and calculate the
+        probability of that point to belong in every classes.
+        '''
+        #Initializing the max probability and the prediction world
+        max_world_prob=-1
+        max_probable_world=None
+
+        #Now iterating over all the class types to get their prob
+        for world in class_vals:
+            #Intiializing the prob of point with that of world
+            prob=1*self.world_prob[world]
+            #Now calculating the prob of these attributes in this world
+            for attr in attr_vals.keys():
+                #value of attributes in this point
+                attr_val=point[attr]
+                #Multiplying the attributes val prob in this world
+                print(world,attr,self.world_f_prob[world][attr].keys())
+                prob*=self.world_f_prob[world][attr][attr_val]
+            #Appending the probability of this world in list
+            if(prob>max_world_prob):
+                max_world_prob=prob
+                max_probable_world=world
+
+        #Now returning the prediciton
+        return max_probable_world,max_world_prob
+
+    #Function to print the confusion matrix and accuracy
+    def _print_evaluation_metrics(self,confusion_mat):
+        '''
+        This function will print the confusion matrix and the
+        accuracy obtained on the given dataset
+        '''
+        #Initializing the counters for accuracy
+        correct_count=0
+        all_count=0
+
+        #Now traversing over the matrix
+        print("Print the confusion matrix")
+        for label in class_vals:
+            print("Actual Label: ",label)
+            for pred in class_vals:
+                count=confusion_mat[label][pred]
+                print("\tcount:{}\tpred_label{}".format(count,pred))
+                #Adding up the correct count
+                if(label==pred):
+                    correct_count+=count
+                #Adding the overall prediction
+                all_count+=count
+            print("####################")
+
+        #Printing the accuracy
+        print("Accuracy:\t",correct_count/all_count)
 
 
 if __name__=="__main__":
@@ -114,3 +198,4 @@ if __name__=="__main__":
     #Calculating the world's probability
     myNaive.get_worlds_probability()
     myNaive.get_attr_prob_in_world()
+    myNaive.evaluate_dataset(train_df)

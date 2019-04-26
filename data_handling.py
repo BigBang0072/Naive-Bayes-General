@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import re
+np.random.seed(1)
 
 def get_dataframe(filepath,infopath):
     '''
@@ -18,7 +19,7 @@ def get_dataframe(filepath,infopath):
     df.columns=attrs
     print("\n\nPrinting the dataframe")
     #Shuffling the dataframe
-    df=df.sample(frac=1).reset_index(drop=True)
+    df=df.sample(frac=1,random_state=14).reset_index(drop=True)
     print(df.head())
     print("Shape of full dataset:",df.shape)
 
