@@ -214,5 +214,5 @@ if __name__=="__main__":
     myNaive.evaluate_dataset(train_df)
 
     print("\n\n###############################################")
-    print("Evaluating the results on traiing set")
+    print("Evaluating the results on validation set")
     myNaive.evaluate_dataset(valid_df)
