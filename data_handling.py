@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import re
-np.random.seed(1)
+np.random.seed(10)
 
 def get_dataframe(filepath,infopath):
     '''
